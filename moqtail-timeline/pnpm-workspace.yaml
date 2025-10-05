@@ -1,0 +1,6 @@
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - esbuild
+
+patchedDependencies:
+  moqtail-ts: patches/moqtail-ts.patch

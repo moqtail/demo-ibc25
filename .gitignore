@@ -1,0 +1,16 @@
+# Generated MP4 recordings
+*.mp4
+
+# Common development files
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+target/

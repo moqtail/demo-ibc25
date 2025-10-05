@@ -1,0 +1,33 @@
+diff --git a/dist/client/index.cjs b/dist/client/index.cjs
+index 90bdf0b120d666499ab20d1f4cfeb8960c1fa054..c5fe6bc359f1e21686102abfb0e7e551c6854bcf 100644
+--- a/dist/client/index.cjs
++++ b/dist/client/index.cjs
+@@ -6017,17 +6017,21 @@ var MoqtailClient = class _MoqtailClient {
+   }
+   async #acceptIncomingUniStreams() {
+     this.#ensureActive();
+-    try {
+-      const uds = this.webTransport.incomingUnidirectionalStreams;
+-      const reader = uds.getReader();
+-      while (true) {
++    const uds = this.webTransport.incomingUnidirectionalStreams;
++    const reader = uds.getReader();
++    let isDone = false;
++    while (!isDone) {
++      try {
+         const { value, done } = await reader.read();
+-        if (done) throw new MoqtailError("WebTransport session is terminated");
++        if (done) {
++          isDone = true;
++          throw new MoqtailError("WebTransport session is terminated");
++        }
+         let uniStream = value;
+         this.#handleRecvStreams(uniStream);
++      } catch (error) {
++        console.log("acceptIncomingUniStreams error", error);
+       }
+-    } catch (error) {
+-      console.log("acceptIncomingUniStreams error", error);
+     }
+   }
+   // TODO: Handle request cancellation. Cancel streams are expected to receive some on-fly objects.
