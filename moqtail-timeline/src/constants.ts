@@ -16,6 +16,7 @@
 
 export const MAX_VIDEO_TILES = 12;
 export const MAX_TIMELINE_SECONDS = 600; // 10 minutes
+export const MAX_FETCH_BATCH_SIZE = 5; // Maximum of 5 objects per fetch request
 
 // MSE Buffer Configuration
 export const DEFAULT_LIVE_EDGE_DELAY = 1.5; // seconds

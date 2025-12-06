@@ -1,7 +1,16 @@
 diff --git a/dist/client/index.cjs b/dist/client/index.cjs
-index 90bdf0b120d666499ab20d1f4cfeb8960c1fa054..c5fe6bc359f1e21686102abfb0e7e551c6854bcf 100644
+index 90bdf0b120d666499ab20d1f4cfeb8960c1fa054..667ec43b6ad8ff60c61718f152e4ea189672698b 100644
 --- a/dist/client/index.cjs
 +++ b/dist/client/index.cjs
+@@ -5756,7 +5756,7 @@ var MoqtailClient = class _MoqtailClient {
+         return response;
+       } else {
+         const stream = request.stream;
+-        return { requestId: msg.requestId, stream };
++        return { requestId: msg.requestId, stream, ok: response };
+       }
+     } catch (error) {
+       await this.disconnect(
 @@ -6017,17 +6017,21 @@ var MoqtailClient = class _MoqtailClient {
    }
    async #acceptIncomingUniStreams() {
@@ -31,3 +40,66 @@ index 90bdf0b120d666499ab20d1f4cfeb8960c1fa054..c5fe6bc359f1e21686102abfb0e7e551
      }
    }
    // TODO: Handle request cancellation. Cancel streams are expected to receive some on-fly objects.
+diff --git a/dist/client/index.d.cts b/dist/client/index.d.cts
+index 5f4f46bd06e85d713fa8931fa1245c84d7a892cb..de58e44d967e04bd066b557ebd1358886f268913 100644
+--- a/dist/client/index.d.cts
++++ b/dist/client/index.d.cts
+@@ -1053,6 +1053,7 @@ declare class MoqtailClient {
+     fetch(args: FetchOptions): Promise<FetchError | {
+         requestId: bigint;
+         stream: ReadableStream<MoqtObject>;
++        ok: FetchOk;
+     }>;
+     /**
+      * Request early termination of an in‑flight FETCH identified by its `requestId`.
+diff --git a/dist/client/index.d.ts b/dist/client/index.d.ts
+index be62f313f6ff164cc76e5e2aee01caccd8ac6712..9bd3d7c57716600f8333ae76ef09df84818e5b56 100644
+--- a/dist/client/index.d.ts
++++ b/dist/client/index.d.ts
+@@ -1053,6 +1053,7 @@ declare class MoqtailClient {
+     fetch(args: FetchOptions): Promise<FetchError | {
+         requestId: bigint;
+         stream: ReadableStream<MoqtObject>;
++        ok: FetchOk;
+     }>;
+     /**
+      * Request early termination of an in‑flight FETCH identified by its `requestId`.
+diff --git a/dist/client/index.js b/dist/client/index.js
+index aa6f9252c04f12f1bc219ac11e4b254eb92f9d8d..bdcba173e10d97cdb3edf3d1ca26929caf0324ab 100644
+--- a/dist/client/index.js
++++ b/dist/client/index.js
+@@ -5754,7 +5754,7 @@ var MoqtailClient = class _MoqtailClient {
+         return response;
+       } else {
+         const stream = request.stream;
+-        return { requestId: msg.requestId, stream };
++        return { requestId: msg.requestId, stream, ok: response };
+       }
+     } catch (error) {
+       await this.disconnect(
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 68b521986cad8691c32f831ab04be5721b751a9f..e20aa03f410bc78981ddb1787b41da9306d5de85 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -5997,7 +5997,7 @@ var MoqtailClient = class _MoqtailClient {
+         return response;
+       } else {
+         const stream = request.stream;
+-        return { requestId: msg.requestId, stream };
++        return { requestId: msg.requestId, stream, ok: response };
+       }
+     } catch (error) {
+       await this.disconnect(
+diff --git a/dist/index.js b/dist/index.js
+index 6ae11bf930aa993fb79707afa134614124ee6e5d..b43c247ba951302d8d5aa5c8a64d600a1a77c44e 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -5991,7 +5991,7 @@ var MoqtailClient = class _MoqtailClient {
+         return response;
+       } else {
+         const stream = request.stream;
+-        return { requestId: msg.requestId, stream };
++        return { requestId: msg.requestId, stream, ok: response };
+       }
+     } catch (error) {
+       await this.disconnect(

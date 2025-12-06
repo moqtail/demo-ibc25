@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { BroadcastStream } from './stream';
 import * as Comlink from 'comlink';
 import { Mutex } from 'async-mutex';
 import {
@@ -35,6 +34,7 @@ import { createFile, MP4BoxBuffer, type AllRegisteredBoxes } from 'mp4box';
 import { TimelineZod, type MediaLocation, type TimelinePayload } from '@/types';
 import { ntptoms } from './utils';
 import { MAX_TIMELINE_SECONDS } from '@/constants';
+import PacedFetchStream from './stream';
 
 declare const self: DedicatedWorkerGlobalScope;
 
@@ -44,7 +44,6 @@ interface MOQStreamStruct {
   requestMode: 'subscribe' | 'fetch';
   source: ReadableStream<MoqtObject>;
   latestObject?: MoqtObject;
-  fanout?: BroadcastStream<MoqtObject>;
   promises?: Promise<void>[];
   buffers?: Partial<{
     [type in CARP['tracks'][number]['role']]: {
@@ -261,6 +260,62 @@ class MOQProcessor {
     return struct.requestId;
   }
 
+  async addPacedMediaTracks(
+    videoParams: FetchOptions,
+    audioParams: FetchOptions,
+    handleId: ReturnType<typeof crypto.randomUUID>,
+  ) {
+    // Sanity check: track names must be different
+    if (videoParams.trackName === audioParams.trackName)
+      throw new Error('Video and audio track names must be different');
+
+    // Verify both tracks
+    for (const params of [videoParams, audioParams]) {
+      // We require a catalog entry to be present
+      if (!this.catalog?.getByTrackName(params.trackName))
+        throw new Error(`Track not found in catalog: ${params.trackName}`);
+
+      // Verify packaging is 'chunk-per-object'
+      if (this.catalog.getPackaging(params.trackName) !== 'chunk-per-object')
+        throw new Error(
+          `Unsupported packaging type for track ${params.trackName}, only 'chunk-per-object' is supported`,
+        );
+    }
+
+    // Create the PacedFetchStream manager
+    if (!this.client) throw new Error('MOQProcessor not initialized');
+    const pacedFetchStream = new PacedFetchStream(this.client);
+
+    // Add the media tracks
+    const requestIds: bigint[] = [];
+    for (const params of [videoParams, audioParams]) {
+      const result = await pacedFetchStream.addMediaTrack(params.trackName, {
+        priority: params.priority,
+        start: new Location(params.location.start.group, params.location.start.object),
+        end: new Location(params.location.end.group, params.location.end.object),
+        fullTrackName: this.#getFullTrackName(params.trackName),
+        requestFactor: params === audioParams ? 2 : undefined, // Audio gets double the batch size
+      });
+
+      // Create the stream struct
+      const struct = {
+        trackName: params.trackName,
+        requestId: result.requestId,
+        requestMode: params.mode,
+        source: result.source,
+      };
+
+      // Add the stream to the pool
+      this.streams.push(struct);
+      requestIds.push(result.requestId);
+
+      // Create new Source Buffer
+      await this.#newSourceBufferMSE(struct, params.trackName, handleId);
+    }
+
+    return requestIds;
+  }
+
   async startMedia(
     requestId: bigint,
     bufferNotification?: BufferNotificationFn,
@@ -453,11 +508,8 @@ class MOQProcessor {
         },
       });
 
-      // Create a fanout in case of multiple consumers
-      struct.fanout = new BroadcastStream();
-
       // Pipe through fanout in case of multiple consumers
-      const promise = struct.source.pipeThrough(struct.fanout).pipeTo(writable);
+      const promise = struct.source.pipeTo(writable);
       struct.promises = struct.promises ? struct.promises.concat(promise) : [promise];
 
       // Cleanup stream, re
@@ -643,12 +695,8 @@ class MOQProcessor {
       write: async object => await cb(object),
     });
 
-    // Create a fanout in case of multiple consumers
-    struct.fanout = new BroadcastStream();
-
     // Pipe through fanout in case of multiple consumers
     struct.source
-      .pipeThrough(struct.fanout) // Fanout for multiple consumers
       .pipeThrough(timelineTransformer) // Transform MoQ objects to TimelinePayload
       .pipeTo(writable); // Send to callback
 

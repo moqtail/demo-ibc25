@@ -267,7 +267,7 @@ function VideoPlayer({ className, item, onRemove, onPromote, isPromoted }: Video
   useEffect(() => {
     if (!initialized) return;
     const ac = new AbortController();
-    const requestIds: Promise<bigint>[] = [];
+    const requestIds: Promise<bigint[]>[] = [];
     let videoRequestId: Promise<bigint>;
     let mseBuffer: MSEBuffer;
 
@@ -284,46 +284,38 @@ function VideoPlayer({ className, item, onRemove, onPromote, isPromoted }: Video
       // Initialize and get the catalog
       const catalog = await mp.init();
 
-      // By default we subscribe to the video track
       if (item.type === 'live') {
-        // Find the video track
         let trackName;
+        // Find the video track
         if (item.trackNames && item.trackNames.length > 0) {
           trackName = item.trackNames.find(name => catalog.getRole(name) === 'video');
         } else trackName = catalog.getVideo()?.name;
         if (!trackName) throw new Error('No video track found in the catalog');
         videoRequestId = mp.addMediaTrack({ mode: 'subscribe', trackName }, source.id);
-        requestIds.push(videoRequestId);
-      } else {
-        const trackName = item.trackNames.find(name => catalog.getRole(name) === 'video');
-        if (!trackName) throw new Error('No video track found in the catalog');
-        videoRequestId = mp.addMediaTrack(
-          { mode: 'fetch', trackName, location: item.location, priority: 50 },
-          source.id,
-        );
-        requestIds.push(videoRequestId);
-      }
+        requestIds.push(videoRequestId.then(id => [id]));
 
-      // If available, subscribe to the audio track
-      if (item.type === 'live') {
         // Find the audio track
-        let trackName;
         if (item.trackNames && item.trackNames.length > 0) {
           trackName = item.trackNames.find(name => catalog.getRole(name) === 'audio');
         } else trackName = catalog.getAudio()?.name;
 
         if (trackName)
-          requestIds.push(mp.addMediaTrack({ mode: 'subscribe', trackName }, source.id));
-      } else {
-        const trackName = item.trackNames.find(name => catalog.getRole(name) === 'audio');
-        if (trackName) {
           requestIds.push(
-            mp.addMediaTrack(
-              { mode: 'fetch', trackName, location: item.location, priority: 50 },
-              source.id,
-            ),
+            mp.addMediaTrack({ mode: 'subscribe', trackName }, source.id).then(id => [id]),
           );
-        }
+      } else {
+        const videoTrackName = item.trackNames.find(name => catalog.getRole(name) === 'video');
+        if (!videoTrackName) throw new Error('No video track found in the catalog');
+        const audioTrackName = item.trackNames.find(name => catalog.getRole(name) === 'audio');
+        if (!audioTrackName) throw new Error('No audio track found in the catalog');
+
+        // Fetch both audio and video tracks
+        const pacedRequestIds = mp.addPacedMediaTracks(
+          { mode: 'fetch', trackName: videoTrackName, location: item.location, priority: 50 },
+          { mode: 'fetch', trackName: audioTrackName, location: item.location, priority: 50 },
+          source.id,
+        );
+        requestIds.push(pacedRequestIds);
       }
 
       // Seek to buffer end
@@ -349,7 +341,7 @@ function VideoPlayer({ className, item, onRemove, onPromote, isPromoted }: Video
       // Now we can start the playback
       const ids = await Promise.all(requestIds);
       await Promise.all(
-        ids.map(async id => {
+        ids.flat().map(async id => {
           if (id === (await videoRequestId))
             mp.startMedia(
               id,
@@ -371,10 +363,12 @@ function VideoPlayer({ className, item, onRemove, onPromote, isPromoted }: Video
     return () => {
       ac.abort('Component unmounted');
       mseBuffer?.dispose();
-      requestIds.forEach(async id =>
-        mp?.removeTrack(await id).catch(error => {
-          console.error('Error removing track:', error);
-        }),
+      requestIds.forEach(async ids =>
+        (await ids).forEach(async id =>
+          mp?.removeTrack(id).catch(error => {
+            console.error('Error removing track:', error);
+          }),
+        ),
       );
     };
   }, [initialized]);

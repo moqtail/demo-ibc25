@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   moqtail-ts:
-    hash: e4522758576140cf8c0a37fb77b929718038a4cd9e14d962074b5b45f29f8a82
+    hash: 7511a28f7993774706f8fc44a5a97f6da021e13ab17b0d386feeece5885928e6
     path: patches/moqtail-ts.patch
 
 importers:
@@ -66,7 +66,7 @@ importers:
         version: 0.542.0(react@19.1.1)
       moqtail-ts:
         specifier: ^0.3.1
-        version: 0.3.1(patch_hash=e4522758576140cf8c0a37fb77b929718038a4cd9e14d962074b5b45f29f8a82)
+        version: 0.3.1(patch_hash=7511a28f7993774706f8fc44a5a97f6da021e13ab17b0d386feeece5885928e6)
       mp4box:
         specifier: ^2.1.1
         version: 2.1.1
@@ -2502,7 +2502,7 @@ snapshots:
 
   mkdirp@3.0.1: {}
 
-  moqtail-ts@0.3.1(patch_hash=e4522758576140cf8c0a37fb77b929718038a4cd9e14d962074b5b45f29f8a82):
+  moqtail-ts@0.3.1(patch_hash=7511a28f7993774706f8fc44a5a97f6da021e13ab17b0d386feeece5885928e6):
     dependencies:
       heap-js: 2.6.0
 
