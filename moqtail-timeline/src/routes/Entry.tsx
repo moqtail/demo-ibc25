@@ -15,12 +15,21 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { MdMobileOff } from 'react-icons/md';
+import { MdMobileOff, MdWarning } from 'react-icons/md';
 import { useAppDispatch } from '@/store/hooks';
 import { actions } from '@/store/slices/player';
 import { useNavigate } from 'react-router';
 import { useMediaQuery } from 'usehooks-ts';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+function checkAPIAvailability(): boolean {
+  return (
+    'MediaSource' in window &&
+    'MediaSourceHandle' in window &&
+    'WebTransport' in window &&
+    'ReadableStream' in window
+  );
+}
 
 function Entry() {
   const navigate = useNavigate();
@@ -50,8 +59,17 @@ function Entry() {
             considerations.
           </AlertDescription>
         </Alert>
+        <Alert variant="destructive" hidden={checkAPIAvailability()}>
+          <MdWarning />
+          <AlertTitle>Unsupported Browser</AlertTitle>
+          <AlertDescription>
+            Your browser does not support all the necessary APIs required for this demo. Please try
+            using the latest version of Chrome on desktop.
+          </AlertDescription>
+        </Alert>
         <Button
           className="basketball-button h-12 cursor-pointer"
+          disabled={!checkAPIAvailability()}
           onClick={() => {
             dispatch(actions.setConnectionOptions({ url: 'https://localhost:4433' }));
             navigate('/demo');
