@@ -1,10 +1,10 @@
 # MOQtail with AI-Generated Event Timeline
 
-This demo showcases a streaming pipeline that starts from a MOQ publisher, the moqtail relay, and an AI service that generates an event timeline based on the incoming data.
+This demo showcases a streaming pipeline that starts from a MOQT publisher, the MOQtail relay and an AI service that generates an event timeline based on the incoming data.
 
 ## Supported Relay Version
 
-This demo uses MOQ Draft 11, you may use commit [`fd691b4`](https://github.com/moqtail/moqtail/tree/fd691b4387c91b72acc4d264d4da092af49b7b0d) of MOQtail as the relay.
+This demo uses MOQT draft 11, you may use commit [`fd691b4`](https://github.com/moqtail/moqtail/tree/fd691b4387c91b72acc4d264d4da092af49b7b0d) of MOQtail as the relay.
 
 ## Providing Event Data
 
